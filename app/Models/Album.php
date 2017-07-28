@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Facades\Lastfm;
 use App\Traits\SupportsDeleteWhereIDsNotIn;
+use App\Traits\ImageStorage;
+use App\Traits\StoragePath;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,20 +18,19 @@ use Illuminate\Database\Eloquent\Model;
  * @property Artist artist          The album's artist
  * @property int    artist_id
  * @property Collection  songs
- * @property bool   is_unknown
  */
 class Album extends Model
 {
-    use SupportsDeleteWhereIDsNotIn;
+    use SupportsDeleteWhereIDsNotIn, ImageStorage, StoragePath;
 
     const UNKNOWN_ID = 1;
     const UNKNOWN_NAME = 'Unknown Album';
     const UNKNOWN_COVER = 'unknown-album.png';
+    const IMAGE_DIRECTORY = 'covers';
 
     protected $guarded = ['id'];
     protected $hidden = ['updated_at'];
     protected $casts = ['artist_id' => 'integer'];
-    protected $appends = ['is_compilation'];
 
     public function artist()
     {
@@ -41,7 +42,7 @@ class Album extends Model
         return $this->hasMany(Song::class);
     }
 
-    public function getIsUnknownAttribute()
+    public function isUnknown()
     {
         return $this->id === self::UNKNOWN_ID;
     }
@@ -59,7 +60,7 @@ class Album extends Model
     {
         // If this is a compilation album, its artist must be "Various Artists"
         if ($isCompilation) {
-            $artist = Artist::getVariousArtist();
+            $artist = Artist::getVarious();
         }
 
         return self::firstOrCreate([
@@ -75,16 +76,18 @@ class Album extends Model
      */
     public function getInfo()
     {
-        if ($this->is_unknown) {
+        if ($this->isUnknown()) {
             return false;
         }
 
         $info = Lastfm::getAlbumInfo($this->name, $this->artist->name);
-        $image = array_get($info, 'image');
 
         // If our current album has no cover, and Last.fm has one, why don't we steal it?
         // Great artists steal for their great albums!
-        if (!$this->has_cover && is_string($image) && ini_get('allow_url_fopen')) {
+        if (!$this->has_cover &&
+            is_string($image = array_get($info, 'image')) &&
+            ini_get('allow_url_fopen')
+        ) {
             $extension = explode('.', $image);
             $this->writeCoverFile(file_get_contents($image), last($extension));
             $info['cover'] = $this->cover;
@@ -125,47 +128,45 @@ class Album extends Model
      */
     public function writeCoverFile($binaryData, $extension)
     {
-        $extension = trim(strtolower($extension), '. ');
-        $destination = $this->generateRandomCoverPath($extension);
-        file_put_contents($destination, $binaryData);
-
-        $this->update(['cover' => basename($destination)]);
+        $fileName = uniqid('', true).".".trim(strtolower($extension), '. ');
+        
+        $this->putImage($fileName, $binaryData);
+        
+        $this->update(['cover' => basename($this->storagePath().$fileName)]);
     }
 
     /**
      * Copy a cover file from an existing image on the system.
      *
-     * @param string $source The original image's full path.
+     * @param string $srcPath The original image's full path.
      */
-    public function copyCoverFile($source)
+    public function copyCoverFile($srcPath)
     {
-        $extension = pathinfo($source, PATHINFO_EXTENSION);
-        $destination = $this->generateRandomCoverPath($extension);
-        copy($source, $destination);
+        $extension = pathinfo($srcPath, PATHINFO_EXTENSION);
+        $destPath = $this->storagePath().uniqid('', true).".".$extension;
+        copy($srcPath, $destPath);
 
-        $this->update(['cover' => basename($destination)]);
+        $this->update(['cover' => basename($destPath)]);
     }
-
+    
     /**
-     * Generate a random path for the cover image.
-     *
-     * @param string $extension The extension of the cover (without dot)
-     *
-     * @return string
+     * @param $value
+     * 
+     * @return void
      */
-    private function generateRandomCoverPath($extension)
-    {
-        return app()->publicPath().'/public/img/covers/'.uniqid('', true).".$extension";
-    }
-
     public function setCoverAttribute($value)
     {
         $this->attributes['cover'] = $value ?: self::UNKNOWN_COVER;
     }
-
+    
+    /**
+     * @param $value
+     * 
+     * @return string
+     */
     public function getCoverAttribute($value)
     {
-        return app()->staticUrl('public/img/covers/'.($value ?: self::UNKNOWN_COVER));
+       return $this->getImageAttribute($value ?: self::UNKNOWN_COVER);
     }
 
     /**
@@ -175,7 +176,7 @@ class Album extends Model
      */
     public function getHasCoverAttribute()
     {
-        return $this->cover !== $this->getCoverAttribute(null);
+        return $this->cover !== $this->getImageAttribute(self::UNKNOWN_COVER);
     }
 
     /**

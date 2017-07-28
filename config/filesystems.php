@@ -47,7 +47,15 @@ return [
             'driver' => 'local',
             'root'   => storage_path('app'),
         ],
-
+        
+        // This settings can be modified as the user deems fit
+        'public' => [
+            'driver'     => 'local',
+            'root'       => public_path().'/public/img/',
+            'url'        => env('APP_URL').'/public/img',
+            'visibility' => 'public',
+        ],
+        
         'ftp' => [
             'driver'   => 'ftp',
             'host'     => 'ftp.example.com',
