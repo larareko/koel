@@ -27,6 +27,7 @@ class Album extends Model
     const UNKNOWN_NAME = 'Unknown Album';
     const UNKNOWN_COVER = 'unknown-album.png';
     const IMAGE_DIRECTORY = 'covers';
+    const DISK = 'public';
 
     protected $guarded = ['id'];
     protected $hidden = ['updated_at'];

@@ -15,7 +15,7 @@ trait ImageStorage {
      */
     public function getImageAttribute($value)
     {
-       return $value ? Storage::disk('public')->url(self::IMAGE_DIRECTORY.'/'.$value) : null;
+       return $value ? Storage::disk(self::DISK)->url(self::IMAGE_DIRECTORY.'/'.$value) : null;
     }
     
     /**
@@ -28,6 +28,6 @@ trait ImageStorage {
      */
     public function putImage($fileName, $binaryData)
     {
-        Storage::disk('public')->put(self::IMAGE_DIRECTORY.'/'.$fileName, $binaryData);
+        Storage::disk(self::DISK)->put(self::IMAGE_DIRECTORY.'/'.$fileName, $binaryData);
     }
 }
