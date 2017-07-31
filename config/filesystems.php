@@ -69,13 +69,15 @@ return [
             // 'ssl'      => true,
             // 'timeout'  => 30,
         ],
-
+        
+        // The user can also choose to use s3 instead of local storage.
         's3' => [
             'driver' => 's3',
-            'key' => env('AWS_KEY'),
-            'secret' => env('AWS_SECRET'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
             'region' => env('AWS_REGION'),
-            'bucket' => env('AWS_BUCKET'),
+            'bucket' => env('AWS_IMAGE_BUCKET'),
+            'visibility' => 'public',
         ],
 
         'rackspace' => [

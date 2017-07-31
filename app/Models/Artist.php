@@ -24,7 +24,6 @@ class Artist extends Model
     const VARIOUS_ID = 2;
     const VARIOUS_NAME = 'Various Artists';
     const IMAGE_DIRECTORY = 'artists';
-    const DISK = 'public';
 
     protected $guarded = ['id'];
 
