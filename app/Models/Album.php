@@ -6,6 +6,7 @@ use App\Facades\Lastfm;
 use App\Traits\SupportsDeleteWhereIDsNotIn;
 use App\Traits\ImageStorage;
 use App\Traits\StoragePath;
+use App\Traits\UploadUnkownImagesToS3;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Album extends Model
 {
-    use SupportsDeleteWhereIDsNotIn, ImageStorage, StoragePath;
+    use SupportsDeleteWhereIDsNotIn, ImageStorage, StoragePath, UploadUnkownImagesToS3;
 
     const UNKNOWN_ID = 1;
     const UNKNOWN_NAME = 'Unknown Album';
@@ -77,6 +78,7 @@ class Album extends Model
     public function getInfo()
     {
         if ($this->isUnknown()) {
+            $this->uploadUnkownImagesToS3();
             return false;
         }
 

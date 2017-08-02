@@ -33,6 +33,15 @@ trait ImageStorage {
     
     private function disk()
     {
-        return (bool) env('STORAGE') ? env('STORAGE') : 'public';
+        $disk = (bool) env('STORAGE') ? env('STORAGE') : 'public';
+        
+        $this->setUnkownImgsInS3($disk);
+        
+        return $disk;
+    }
+    
+    private function setUnkownImgsInS3(string $disk)
+    {
+        
     }
 }
